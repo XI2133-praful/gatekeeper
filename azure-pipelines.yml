@@ -1,0 +1,30 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - '*'
+variables:
+  system_accesstoken: $(System.AccessToken)
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- checkout: self
+  persistCredentials: true    #Allow scripts to access the system token
+  clean: true 
+
+- task: Bash@3
+  name: SyncRepo
+  inputs:
+    targetType: 'inline'
+    script: |
+      git config --global user.email "praful.waghe@xebia.com"
+      git config --global user.name "praful"
+      git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
+      git remote add vsts https://www.visualstudio.com/PWV1036727/_git/yes-genie
+      git branch -r | grep -v '\->' | while read remote; do git -c http.extraheader="AUTHORIZATION: bearer $(system_accesstoken)" push -u vsts "${remote#origin/}"; done
